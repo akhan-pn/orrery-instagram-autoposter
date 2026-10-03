@@ -1,0 +1,38 @@
+name: Publish due Instagram posts
+
+on:
+  schedule:
+    # 04:35 UTC = 10:05 IST, just after the 10:00 publish slot.
+    # GitHub's scheduler commonly runs 5-15 min late, so the job is set to
+    # fire after the slot rather than before it; a post is only sent once
+    # its Publish Date has actually passed.
+    - cron: "35 4 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would post, without posting"
+        type: boolean
+        default: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Publish
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: python publish.py
