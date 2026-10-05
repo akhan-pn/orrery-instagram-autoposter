@@ -34,5 +34,9 @@ jobs:
           AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          LINKEDIN_ORG_URN: ${{ secrets.LINKEDIN_ORG_URN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          PUBLORA_API_KEY: ${{ secrets.PUBLORA_API_KEY }}
+          PUBLORA_LINKEDIN_PLATFORM_ID: ${{ secrets.PUBLORA_LINKEDIN_PLATFORM_ID }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: python publish.py

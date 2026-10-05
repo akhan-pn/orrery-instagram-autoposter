@@ -1,7 +1,12 @@
-# Orrery Instagram autoposter
+# Orrery social autoposter
 
-Posts Orrery's carousels to Instagram from the **Orrery HQ** Airtable base, on a
-schedule, for free.
+Posts Orrery's carousels to **Instagram and LinkedIn** from the **Orrery HQ**
+Airtable base, on a schedule, for free.
+
+Each record's **Platform** field decides where it goes. Instagram gets the JPEG
+slides; LinkedIn gets the PDF, because a LinkedIn carousel is a document post.
+The two are tracked separately in **Post URL** and **LinkedIn URL**, so a
+failure on one channel is retried without re-posting to the other.
 
 A GitHub Actions cron job looks for posts whose **Status** is `Scheduled` and
 whose **Publish Date** has passed, pushes them to Instagram as a carousel, then
@@ -100,3 +105,40 @@ cp .env.example .env     # fill it in
 set -a; source .env; set +a
 DRY_RUN=1 python publish.py
 ```
+
+
+## LinkedIn
+
+`linkedin.py` picks its backend from whichever variables are set, preferring
+the unlimited one.
+
+### Direct (free, unlimited)
+
+Needs `LINKEDIN_ORG_URN` and `LINKEDIN_ACCESS_TOKEN`.
+
+Posting *as an organisation* requires the `w_organization_social` scope, which
+only comes with LinkedIn's **Community Management API** — an application
+LinkedIn has to approve, not a product you can just enable. Apply at
+<https://developer.linkedin.com/product-catalog>. Approval is not guaranteed.
+
+Your org URN is `urn:li:organization:<id>`; the id is in your Company Page
+admin URL.
+
+### Publora (fallback, 15 posts/month free)
+
+Needs `PUBLORA_API_KEY` and `PUBLORA_LINKEDIN_PLATFORM_ID`.
+
+Publora already holds the company-page connection, so no LinkedIn approval is
+involved. Sign up at <https://app.publora.com>, connect the Orrery page, and
+copy the platform id (`linkedin-xxxxxxxx`) from Channels.
+
+Use this if the Community Management application is rejected or still pending.
+
+## Files
+
+| File | Does |
+|---|---|
+| `publish.py` | finds due records, routes them per Platform, writes results back |
+| `instagram.py` | carousel via the Meta Graph API |
+| `linkedin.py` | document post, direct or via Publora |
+| `airtable_io.py` | reads the calendar, updates records |
