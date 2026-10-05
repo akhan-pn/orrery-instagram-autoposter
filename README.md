@@ -1,12 +1,13 @@
 # Orrery social autoposter
 
-Posts Orrery's carousels to **Instagram and LinkedIn** from the **Orrery HQ**
-Airtable base, on a schedule, for free.
+Posts Orrery's carousels to **Instagram, LinkedIn and Facebook** from the
+**Orrery HQ** Airtable base, on a schedule, for free.
 
-Each record's **Platform** field decides where it goes. Instagram gets the JPEG
-slides; LinkedIn gets the PDF, because a LinkedIn carousel is a document post.
-The two are tracked separately in **Post URL** and **LinkedIn URL**, so a
-failure on one channel is retried without re-posting to the other.
+Each record's **Platform** field decides where it goes. Instagram and Facebook
+get the JPEG slides; LinkedIn gets the PDF, because a LinkedIn carousel is a
+document post. Each is tracked separately in **Post URL**, **LinkedIn URL** and
+**Facebook URL**, so a failure on one channel is retried without re-posting to
+the others.
 
 A GitHub Actions cron job looks for posts whose **Status** is `Scheduled` and
 whose **Publish Date** has passed, pushes them to Instagram as a carousel, then
@@ -134,6 +135,31 @@ copy the platform id (`linkedin-xxxxxxxx`) from Channels.
 
 Use this if the Community Management application is rejected or still pending.
 
+## Facebook
+
+`facebook.py` posts to the Orrery **Page**, reusing the same `Media (JPEG)`
+slides Instagram gets — Facebook accepts JPEG and PNG, so no separate render
+is needed.
+
+Needs `FB_PAGE_ID` and `FB_PAGE_ACCESS_TOKEN`.
+
+A multi-image Page post is two steps, not one: each image goes to
+`/{page-id}/photos` with `published=false`, which stores it without putting it
+in the feed, and the returned photo ids are then attached to a single
+`/{page-id}/feed` post. Uploading them published would create one feed story
+per image instead of one post with a gallery.
+
+The token must be a **Page** access token, not the user token that issued it.
+Grant `pages_manage_posts` and `pages_read_engagement`, then read the page's
+own token out of `/me/accounts`:
+
+```
+curl -s "https://graph.facebook.com/v21.0/me/accounts?access_token=USER_TOKEN"
+```
+
+The `id` is `FB_PAGE_ID` and the `access_token` on the same entry is
+`FB_PAGE_ACCESS_TOKEN`. The resulting URL is written to **Facebook URL**.
+
 ## Files
 
 | File | Does |
@@ -141,4 +167,5 @@ Use this if the Community Management application is rejected or still pending.
 | `publish.py` | finds due records, routes them per Platform, writes results back |
 | `instagram.py` | carousel via the Meta Graph API |
 | `linkedin.py` | document post, direct or via Publora |
+| `facebook.py` | multi-photo Page post via the Meta Graph API |
 | `airtable_io.py` | reads the calendar, updates records |

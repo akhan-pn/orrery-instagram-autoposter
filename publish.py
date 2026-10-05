@@ -6,9 +6,9 @@ sends each to every channel named in its Platform field, then records the
 resulting URLs. Status only becomes "Published" once every targeted channel has
 actually gone out.
 
-Neither Instagram nor a LinkedIn document post can be scheduled through the
-API, so the schedule lives in Airtable and the cron publishes whatever is
-already due. Nothing ever goes out early.
+None of these channels can be scheduled through their APIs, so the schedule
+lives in Airtable and the cron publishes whatever is already due. Nothing ever
+goes out early.
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ import os
 import sys
 
 import airtable_io
+import facebook
 import instagram
 import linkedin
 
@@ -97,7 +98,30 @@ def handle(record: dict) -> tuple[int, int]:
                 failed += 1
                 outstanding += 1
 
-    unknown = [t for t in targets if t not in ("Instagram", "LinkedIn")]
+    # Facebook --------------------------------------------------------------
+    if "Facebook" in targets:
+        if fields.get("Facebook URL"):
+            log("    Facebook: already posted")
+        elif not facebook.configured():
+            log("    Facebook: SKIPPED, FB_PAGE_ID / FB_PAGE_ACCESS_TOKEN not set")
+            outstanding += 1
+        else:
+            try:
+                urls = airtable_io.attachment_urls(fields, "Media (JPEG)", "image/jpeg")
+                if DRY_RUN:
+                    log(f"    Facebook: DRY RUN, {len(urls)} photos, caption {len(caption)} chars")
+                    outstanding += 1
+                else:
+                    link = facebook.publish(urls, caption, log=log)
+                    writes["Facebook URL"] = link
+                    log(f"    Facebook: {link}")
+                    sent += 1
+            except Exception as exc:
+                log(f"    Facebook FAILED: {exc}")
+                failed += 1
+                outstanding += 1
+
+    unknown = [t for t in targets if t not in ("Instagram", "LinkedIn", "Facebook")]
     if unknown:
         log(f"    no publisher for: {', '.join(unknown)}")
         outstanding += len(unknown)
